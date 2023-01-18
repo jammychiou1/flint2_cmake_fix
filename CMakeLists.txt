@@ -20,6 +20,8 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build shared libs" on)
 option(WITH_NTL "Build with NTL or not" off)
+option(WITH_BLAS "Build with BLAS or not" off)
+option(CHECK_IPO "Try to build with Introprocedural Optimization or not" off)
 
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/configure" CONFIGURE_CONTENTS)
 string(REGEX MATCH "FLINT_MAJOR=([0-9]*)" _ ${CONFIGURE_CONTENTS})
@@ -36,8 +38,9 @@ if (WITH_NTL)
 endif()
 find_package(PythonInterp REQUIRED)
 
-find_package(CBLAS)
-set(FLINT_USES_BLAS ${CBLAS_FOUND})
+if (WITH_BLAS)
+    find_package(CBLAS REQUIRED)
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
   set(FLINT_WANT_ASSERT ON)
@@ -224,7 +227,7 @@ target_link_libraries(flint PUBLIC
     ${NTL_LIBRARY} ${MPFR_LIBRARIES} ${GMP_LIBRARIES} ${PThreads_LIBRARIES}
 )
 
-if(FLINT_USES_BLAS)
+if(WITH_BLAS)
     target_link_libraries(flint PUBLIC ${CBLAS_LIBRARIES})
 endif()
 
@@ -236,7 +239,7 @@ target_include_directories(flint PUBLIC
     ${NTL_INCLUDE_DIR}
 )
 
-if(FLINT_USES_BLAS)
+if(WITH_BLAS)
     target_include_directories(flint PUBLIC ${CBLAS_INCLUDE_DIRS})
 endif()
 
@@ -276,7 +279,7 @@ elseif (WIN32)
     set_target_properties(flint PROPERTIES RUNTIME_OUTPUT_NAME "flint-${FLINT_MAJOR}")
 endif()
 
-if(NOT DEFINED IPO_SUPPORTED)
+if(NOT DEFINED IPO_SUPPORTED AND CHECK_IPO)
     message(STATUS "Checking for IPO")
     check_ipo_supported(RESULT ipo_supported LANGUAGES C)
     if(ipo_supported)
